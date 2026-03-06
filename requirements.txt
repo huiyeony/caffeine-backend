@@ -1,0 +1,19 @@
+fastapi
+uvicorn
+pydantic
+FlagEmbedding # 로컬 임베딩 모델 사용 중단으로 주석 처리
+torch --index-url https://download.pytorch.org/whl/cpu # 로컬 모델 구동 불필요
+psycopg[binary]
+sqlmodel
+langchain_ollama # 로컬 LLM 연동 불필요
+langsmith
+sqlalchemy
+langchain_core
+supabase
+asyncio
+dotenv
+pydantic_settings
+psycopg
+apscheduler
+openai
+langchain-openai # LangChain과 OpenAI API 연동을 위해 추가
