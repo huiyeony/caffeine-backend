@@ -20,6 +20,9 @@ jobs:
             git pull origin main
             docker compose down
             docker compose up -d --build
-            sleep 15
-            docker exec backend_server ls /app/tasks/
+            echo "Waiting for PostgreSQL to be ready..."
+            until docker exec postgres_db pg_isready -U myuser -d caffeine_db; do
+              sleep 3
+            done
+            echo "PostgreSQL is ready."
             docker exec backend_server python3 /app/tasks/run_pipeline.py
