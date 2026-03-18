@@ -20,4 +20,5 @@ jobs:
             docker compose down
             docker compose up -d --build
             sleep 15
-            docker exec backend_server python3 tasks/run_pipeline.py
+            docker exec backend_server ls /app/tasks/
+            docker exec backend_server python3 /app/tasks/run_pipeline.py
