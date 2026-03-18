@@ -51,10 +51,10 @@ async def seed_initial_data(csv_path: str = "data/drinks_silver.csv"):
                 # 쿼리에 들어갈 튜플 리스트 생성
                 rows_to_insert = [
                     (
-                        item['drink_name'], 
-                        item['brand'], 
-                        item.get('caffeine_amount'), 
-                        item.get('ice_type'), 
+                        item['brand'],
+                        item['drink_name'],
+                        item.get('caffeine_amount'),
+                        item.get('ice_type'),
                         embeddings[j]
                     )
                     for j, item in enumerate(chunk)

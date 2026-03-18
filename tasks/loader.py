@@ -33,7 +33,9 @@ def transform(raw: list[dict]) -> list[dict]:
     - 브랜드명 정규화
     """
     BRAND_ALIAS = {
-        "테라 커피": "테라커피",
+        "테라 커피":    "테라커피",
+        "teracoffee":   "테라커피",
+        "mammothcoffee": "매머드커피",
     }
 
     transformed = []
@@ -53,14 +55,18 @@ def transform(raw: list[dict]) -> list[dict]:
         if caffeine < 0 or caffeine > 1000:
             continue
 
-        # 음료명 기반 ice_type 추론
-        name_lower = drink_name.lower()
-        if any(k in name_lower for k in ["아이스", "ice", "cold"]):
-            ice_type = "ice"
-        elif any(k in name_lower for k in ["핫", "hot", "따뜻"]):
-            ice_type = "hot"
+        # ice_type: 크롤러가 이미 제공한 경우 우선 사용, 없으면 음료명에서 추론
+        raw_ice = (item.get("ice_type") or "").upper()
+        if raw_ice in ("HOT", "ICE"):
+            ice_type = raw_ice.lower()
         else:
-            ice_type = "ice"  # 기본값
+            name_lower = drink_name.lower()
+            if any(k in name_lower for k in ["아이스", "ice", "cold"]):
+                ice_type = "ice"
+            elif any(k in name_lower for k in ["핫", "hot", "따뜻"]):
+                ice_type = "hot"
+            else:
+                ice_type = "ice"  # 기본값
 
         transformed.append({
             "brand": brand,
