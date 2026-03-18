@@ -25,4 +25,5 @@ jobs:
               sleep 3
             done
             echo "PostgreSQL is ready."
+            docker exec backend_server python3 -c "from core.config import settings; print('DB URL:', settings.database_url)"
             docker exec backend_server python3 /app/tasks/run_pipeline.py
