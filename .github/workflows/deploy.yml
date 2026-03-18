@@ -25,5 +25,7 @@ jobs:
               sleep 3
             done
             echo "PostgreSQL is ready."
-            docker exec backend_server python3 -c "from core.config import settings; import psycopg; conn = psycopg.connect(settings.database_url); print('direct psycopg connection OK'); conn.close()"
-            docker exec backend_server python3 /app/tasks/run_pipeline.py
+            docker exec \
+              -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+              -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+              backend_server python3 /app/tasks/run_pipeline.py
