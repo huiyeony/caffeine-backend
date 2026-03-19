@@ -38,6 +38,10 @@ def transform(raw: list[dict]) -> list[dict]:
         "mammothcoffee":  "매머드커피",
         "megacoffee":     "메가커피",
         "composecoffee":  "컴포즈",
+        "starbucks":      "스타벅스",
+        "paikdabang":     "빽다방",
+        "twosome":        "투썸플레이스",
+        "hasamdong":      "하삼동커피",
     }
 
     transformed = []

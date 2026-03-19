@@ -1,7 +1,6 @@
-from data.seed import seed_initial_data
 from rag.promps import CAFFEINE_GUIDE_PROMPT
 from rag.tool import search_caffeine_by_brands
-from core.database import init_db, init_pool, close_pool, get_pool
+from core.database import init_db, init_pool, close_pool
 from core.config import settings
 from tasks.pipeline import run_pipeline
 from core.history import ensure_table_exists, load_history, save_history
@@ -24,17 +23,6 @@ scheduler = AsyncIOScheduler()
 async def lifespan(app: FastAPI):
     init_db()
     await init_pool()
-
-    # DB가 비어 있으면 초기 로컬 CSV 시딩
-    async with get_pool().connection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute("SELECT COUNT(*) FROM drinks")
-            count = (await cur.fetchone())[0]
-
-    if count == 0:
-        await seed_initial_data()
-    else:
-        print(f">>> [API] Skipping seed: {count} drinks already in DB.")
 
     # DynamoDB 히스토리 테이블 확인 및 생성
     ensure_table_exists()
