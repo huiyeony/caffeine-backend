@@ -1,5 +1,5 @@
 from rag.promps import CAFFEINE_GUIDE_PROMPT
-from rag.tool import search_caffeine_by_brands
+from rag.tool import search_by_brand, search_by_menu, search_by_brand_and_menu
 from core.database import init_db, init_pool, close_pool
 from core.config import settings
 from tasks.pipeline import run_pipeline
@@ -51,7 +51,7 @@ app.add_middleware(
 # 1. openai API 연결 및 도구 바인딩
 # OpenAI 모델 객체 초기화 (gpt-4o-mini 또는 gpt-4o 지정 가능)
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-llm_with_tools = llm.bind_tools([search_caffeine_by_brands])
+llm_with_tools = llm.bind_tools([search_by_brand, search_by_menu, search_by_brand_and_menu])
 
 @app.get("/ask")
 async def ask_caffeine(q: str = Query(...), session_id: str = Query(default="default")):
@@ -70,8 +70,14 @@ async def ask_caffeine(q: str = Query(...), session_id: str = Query(default="def
     if ai_msg.tool_calls:
         history.append(ai_msg)
 
+        tools_map = {
+            "search_by_brand": search_by_brand,
+            "search_by_menu": search_by_menu,
+            "search_by_brand_and_menu": search_by_brand_and_menu,
+        }
         for tool_call in ai_msg.tool_calls:
-            search_result = await search_caffeine_by_brands.ainvoke(tool_call)
+            tool_fn = tools_map.get(tool_call["name"])
+            search_result = await tool_fn.ainvoke(tool_call)
             history.append(ToolMessage(
                 content=str(search_result),
                 tool_call_id=tool_call["id"]

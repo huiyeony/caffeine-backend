@@ -1,32 +1,45 @@
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
-from rag.search import search_drinks_hybrid
+from rag.search import search_drinks_by_brand, search_drinks_by_menu, search_drinks_hybrid
 
-# 1. LLM이 추출해야 할 파라미터 구조 정의
-class CaffeineSearchInput(BaseModel):
-    brands: List[str] = Field(
-        description="검색할 브랜드 이름 리스트 (예: ['스타벅스', '컴포즈커피']). 반드시 포함해야 합니다."
-    )
-    query: Optional[str] = Field(
-        default=None,
-        description="검색할 음료 메뉴 이름 또는 키워드. 음료명이 언급된 경우에만 입력하세요."
-    )
 
-# 2. 실제 검색을 수행하는 도구 함수
-@tool(args_schema=CaffeineSearchInput)
-async def search_caffeine_by_brands(brands: List[str], query: Optional[str] = None):
-    """
-    브랜드와 메뉴명을 기반으로 DB에서 카페인 정보를 검색합니다.
-    브랜드는 필수이며, 음료명이 언급된 경우에만 query를 함께 전달하세요.
-    """
-    results = await search_drinks_hybrid(query_text=query, brands=brands)
-    
+class BrandInput(BaseModel):
+    brands: List[str] = Field(description="검색할 브랜드 이름 리스트 (예: ['스타벅스'])")
+
+class MenuInput(BaseModel):
+    query: str = Field(description="검색할 음료 메뉴 이름 또는 키워드")
+
+class BrandAndMenuInput(BaseModel):
+    brands: List[str] = Field(description="검색할 브랜드 이름 리스트")
+    query: str = Field(description="검색할 음료 메뉴 이름 또는 키워드")
+
+
+def _format(results: list) -> str:
     if not results:
         return "검색 결과가 데이터베이스에 없습니다."
-    
-    # LLM이 읽기 좋게 텍스트로 변환하여 반환 (이것이 Context가 됨)
     return "\n".join([
-        f"브랜드: {item['brand']}, 메뉴: {item['drink_name']}, 카페인: {item['caffeine_amount']}mg" 
+        f"브랜드: {item['brand']}, 메뉴: {item['drink_name']}, 카페인: {item['caffeine_amount']}mg"
         for item in results
     ])
+
+
+@tool(args_schema=BrandInput)
+async def search_by_brand(brands: List[str]):
+    """브랜드 전체 메뉴의 카페인 정보를 조회합니다. 특정 음료명 없이 브랜드만 언급된 경우 사용하세요."""
+    results = await search_drinks_by_brand(brands=brands)
+    return _format(results)
+
+
+@tool(args_schema=MenuInput)
+async def search_by_menu(query: str):
+    """음료 메뉴명으로 전 브랜드에서 카페인 정보를 검색합니다. 브랜드 없이 메뉴명만 언급된 경우 사용하세요."""
+    results = await search_drinks_by_menu(query_text=query)
+    return _format(results)
+
+
+@tool(args_schema=BrandAndMenuInput)
+async def search_by_brand_and_menu(brands: List[str], query: str):
+    """브랜드와 메뉴명을 함께 사용해 카페인 정보를 검색합니다. 브랜드와 음료명이 모두 언급된 경우 사용하세요."""
+    results = await search_drinks_hybrid(brands=brands, query_text=query)
+    return _format(results)
