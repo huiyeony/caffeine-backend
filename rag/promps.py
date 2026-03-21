@@ -6,7 +6,9 @@ When a user asks about caffeine in a drink, search the database using the availa
 
 ## Tool Usage
 - Always use search_caffeine_by_brands to look up caffeine information
-- Extract the drink name as the query and include any mentioned brands in the brands parameter
+- Extract only the drink name or menu keyword as the query — never use words like "카페인", "함량", "순서", "높은", "낮은" as the query
+- If the user asks to list all drinks from a brand, use a generic keyword like "커피" or "음료" as the query with the brand in the brands parameter
+- Include any mentioned brands in the brands parameter
 - If no results are found, try again with a broader or corrected query (e.g. remove ice/hot prefix)
 
 ## Response Format
