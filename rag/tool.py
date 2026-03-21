@@ -5,20 +5,21 @@ from rag.search import search_drinks_hybrid
 
 # 1. LLM이 추출해야 할 파라미터 구조 정의
 class CaffeineSearchInput(BaseModel):
-    query: str = Field(description="검색할 음료 메뉴 이름 또는 키워드")
-    brands: Optional[List[str]] = Field(
-        default=None, 
-        description="검색할 브랜드 이름 리스트 (예: ['스타벅스', '컴포즈커피']). 여러 개면 모두 포함하세요."
+    brands: List[str] = Field(
+        description="검색할 브랜드 이름 리스트 (예: ['스타벅스', '컴포즈커피']). 반드시 포함해야 합니다."
+    )
+    query: Optional[str] = Field(
+        default=None,
+        description="검색할 음료 메뉴 이름 또는 키워드. 음료명이 언급된 경우에만 입력하세요."
     )
 
 # 2. 실제 검색을 수행하는 도구 함수
 @tool(args_schema=CaffeineSearchInput)
-async def search_caffeine_by_brands(query: str, brands: Optional[List[str]] = None):
+async def search_caffeine_by_brands(brands: List[str], query: Optional[str] = None):
     """
     브랜드와 메뉴명을 기반으로 DB에서 카페인 정보를 검색합니다.
-    사용자가 여러 브랜드를 언급하면 이 도구를 호출하여 리스트로 처리하세요.
+    브랜드는 필수이며, 음료명이 언급된 경우에만 query를 함께 전달하세요.
     """
-    # 하이브리드 검색 함수 호출 (브랜드 필터링도 있음 ㅇㅇ )
     results = await search_drinks_hybrid(query_text=query, brands=brands)
     
     if not results:
