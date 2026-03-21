@@ -4,7 +4,7 @@ DOMAIN=api.howmanycaffeine.com
 EMAIL=huiyeony888@gmail.com
 CONF_PATH=/home/ubuntu/caffeine-backend/nginx/nginx.conf
 
-# 1단계: HTTP-only 임시 설정으로 nginx 시작
+# 1단계: HTTP-only 임시 설정 작성
 cat > $CONF_PATH << 'EOF'
 server {
     listen 80;
@@ -20,6 +20,8 @@ server {
 }
 EOF
 
+# nginx 재시작 (새 설정 적용)
+docker compose stop nginx
 docker compose up -d nginx
 sleep 3
 
@@ -64,6 +66,7 @@ server {
 }
 EOF
 
-docker compose exec nginx nginx -s reload
+docker compose stop nginx
+docker compose up -d nginx
 
 echo "Done! HTTPS is ready."
