@@ -51,7 +51,7 @@ services:
     volumes:
       - .:/app # 로컬의 backend 폴더를 컨테이너의 /app 폴더로 연결
     env_file:
-      - .env
+      - .env.production
     environment:
       # 리스트 형식을 쓸 때는 '='를 사용해야 합니다.
       - PYTHONPATH=/app
