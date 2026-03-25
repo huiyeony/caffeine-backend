@@ -21,6 +21,16 @@ load_dotenv()
 scheduler = AsyncIOScheduler()
 
 
+async def delete_old_guests():
+    pool = get_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "DELETE FROM users WHERE provider = 'guest' AND created_at < NOW() - INTERVAL '24 hours'"
+            )
+    print(">>> [Scheduler] Old guest users deleted")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
@@ -28,6 +38,8 @@ async def lifespan(app: FastAPI):
 
     # ELT 파이프라인 스케줄 등록 (매주 월요일 새벽 3시)
     scheduler.add_job(run_pipeline, CronTrigger(day_of_week="mon", hour=3, minute=0))
+    # 게스트 유저 삭제 스케줄 등록 (매시간, 24시간 경과 기준)
+    scheduler.add_job(delete_old_guests, CronTrigger(hour="*"))
     scheduler.start()
     print(">>> [API] Server started")
 
