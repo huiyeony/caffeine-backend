@@ -1,17 +1,19 @@
-from rag.promps import CAFFEINE_GUIDE_PROMPT
-from rag.tool import search_by_brand, search_by_menu, search_by_brand_and_menu
-from core.database import init_db, init_pool, close_pool
-from core.config import settings
-from tasks.pipeline import run_pipeline
-from core.history import ensure_table_exists, load_history, save_history
 from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
-from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from psycopg.rows import dict_row
+
+from core.config import settings
+from core.database import close_pool, init_db, init_pool, get_pool
+from tasks.pipeline import run_pipeline
+from rag.pipeline import build_history, run_rag
+from api.v1.routes.auth import router as auth_router
+from api.v1.routes.chatspace import router as chatspace_router
+from api.v1.routes.chat import router as chat_router
 
 load_dotenv()
 
@@ -24,9 +26,6 @@ async def lifespan(app: FastAPI):
     init_db()
     await init_pool()
 
-    # DynamoDB 히스토리 테이블 확인 및 생성
-    ensure_table_exists()
-
     # ELT 파이프라인 스케줄 등록 (매주 월요일 새벽 3시)
     scheduler.add_job(run_pipeline, CronTrigger(day_of_week="mon", hour=3, minute=0))
     scheduler.start()
@@ -37,10 +36,10 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
     await close_pool()
     print(">>> [API] Server shutdown, Scheduler stopped.")
-    
+
 app = FastAPI(lifespan=lifespan)
 
-# 1. CORS 설정 (프론트엔드 접속 허용)
+# CORS 설정 (프론트엔드 접속 허용)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.FRONTEND_URL],
@@ -48,48 +47,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. openai API 연결 및 도구 바인딩
-# OpenAI 모델 객체 초기화 (gpt-4o-mini 또는 gpt-4o 지정 가능)
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-llm_with_tools = llm.bind_tools([search_by_brand, search_by_menu, search_by_brand_and_menu])
+# 라우터 등록
+app.include_router(auth_router)
+app.include_router(chatspace_router)
+app.include_router(chat_router)
+
 
 @app.get("/ask")
-async def ask_caffeine(q: str = Query(...), session_id: str = Query(default="default")):
+async def ask_caffeine(q: str = Query(...), chatspace_id: str = Query(...)):
+    pool = get_pool()
+    async with pool.connection() as conn:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            await cur.execute(
+                "SELECT role, content FROM chat WHERE chatspace_id = %s ORDER BY created_at ASC",
+                (chatspace_id,),
+            )
+            rows = await cur.fetchall()
 
-    # STEP 1: DynamoDB에서 세션 히스토리 로드
-    history = load_history(session_id)
-    if not history:
-        history.append(SystemMessage(content=CAFFEINE_GUIDE_PROMPT))
-
-    history.append(HumanMessage(content=q))
-
-    # STEP 2: 첫 번째 요청 (키워드 추출 및 도구 호출)
-    ai_msg = await llm_with_tools.ainvoke(history)
-
-    # STEP 3: DB 검색 수행
-    if ai_msg.tool_calls:
-        history.append(ai_msg)
-
-        tools_map = {
-            "search_by_brand": search_by_brand,
-            "search_by_menu": search_by_menu,
-            "search_by_brand_and_menu": search_by_brand_and_menu,
-        }
-        for tool_call in ai_msg.tool_calls:
-            tool_fn = tools_map.get(tool_call["name"])
-            search_result = await tool_fn.ainvoke(tool_call)
-            history.append(ToolMessage(
-                content=str(search_result),
-                tool_call_id=tool_call["id"]
-            ))
-
-        # STEP 4: 검색 결과 포함한 히스토리로 최종 답변 생성
-        final_response = await llm.ainvoke(history)
-        history.append(final_response)
-        save_history(session_id, history)
-        return {"answer": final_response.content}
-
-    # 도구 호출 없이 직접 답변 가능한 경우 (예: "안녕")
-    history.append(ai_msg)
-    save_history(session_id, history)
-    return {"answer": ai_msg.content}
+    history = build_history(rows)
+    answer = await run_rag(q, history)
+    return {"answer": answer}

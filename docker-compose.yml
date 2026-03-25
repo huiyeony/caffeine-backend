@@ -44,16 +44,20 @@ services:
     depends_on:
       - db
       # - ollama # Ollama 의존성 주석 처리
+    ports:
+      - "8000:8000"
     command: uvicorn api.v1.app:app --host 0.0.0.0 --port 8000 --reload
     # [수정 2] 볼륨 매핑 추가 (로컬 소스를 컨테이너에 실시간 동기화)
     volumes:
       - .:/app # 로컬의 backend 폴더를 컨테이너의 /app 폴더로 연결
     env_file:
-      - .env.production
+      - .env
     environment:
       # 리스트 형식을 쓸 때는 '='를 사용해야 합니다.
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://myuser:mypassword@db:5432/caffeine_db
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
       # - OLLAMA_BASE_URL=http://ollama:11434 # 로컬 모델 URL 주석 처리
       - PYTHONUNBUFFERED=1
 

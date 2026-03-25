@@ -60,6 +60,42 @@ def init_db():
             cur.execute("CREATE INDEX IF NOT EXISTS idx_drinks_brand ON drinks(brand);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_drinks_drink_name_trgm ON drinks USING gin (drink_name gin_trgm_ops);")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_drinks_embedding ON drinks USING hnsw (embedding vector_cosine_ops);")
-            
+
+            # 유저 테이블
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id    UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                    email      VARCHAR(255) NOT NULL UNIQUE,
+                    password   VARCHAR(255),
+                    provider   VARCHAR(50)  NOT NULL DEFAULT 'local',
+                    created_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+                );
+            """)
+
+            # 채팅방 테이블
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS chatspace (
+                    chatspace_id UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id      UUID         NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+                    title        VARCHAR(255),
+                    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
+                );
+            """)
+
+            # 메시지 테이블
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS chat (
+                    chat_id      UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+                    chatspace_id UUID         NOT NULL REFERENCES chatspace(chatspace_id) ON DELETE CASCADE,
+                    role         VARCHAR(20)  NOT NULL CHECK (role IN ('user', 'assistant')),
+                    content      TEXT         NOT NULL,
+                    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
+                );
+            """)
+
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_chatspace_user_id      ON chatspace(user_id);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_chat_chatspace_id      ON chat(chatspace_id);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_chat_chatspace_created ON chat(chatspace_id, created_at);")
+
             conn.commit()
             print(">>> [Core] Database initialized and indexes verified.")

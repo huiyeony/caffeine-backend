@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     AWS_S3_BUCKET_NAME: str | None = None
     AWS_REGION: str = "ap-northeast-2"
 
-    # JWT (미사용 - 인증 기능 구현 시 필수값으로 변경)
-    JWT_SECRET_KEY: str | None = None
+    # JWT
+    JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_HOURS: int = 24
     REFRESH_TOKEN_EXPIRE_DAY: int = 7

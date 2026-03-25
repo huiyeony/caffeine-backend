@@ -19,4 +19,8 @@ apscheduler
 openai
 langchain-openai
 boto3
+python-jose[cryptography]
+passlib[bcrypt]
+authlib
+httpx
 beautifulsoup4
