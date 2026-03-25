@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from psycopg.rows import dict_row
 
 from core.auth import create_access_token, hash_password, verify_password
@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 class RegisterRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
