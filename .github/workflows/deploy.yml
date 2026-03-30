@@ -16,6 +16,26 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/caffeine-backend
+
+            cat > .env.production << EOF
+            POSTGRES_HOST=db
+            POSTGRES_PORT=5432
+            POSTGRES_USER=myuser
+            POSTGRES_PASSWORD=mypassword
+            POSTGRES_DB=caffeine_db
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_S3_BUCKET_NAME=howmanycaffeine-data-seoul
+            AWS_REGION=ap-northeast-2
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
+            LANGSMITH_TRACING=true
+            LANGSMITH_PROJECT=howmanycaffeine
+            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+            FRONTEND_URL=https://www.howmanycaffeine.com
+            REDIS_URL=redis://localhost:6379
+            EOF
+
             git reset --hard origin/main
             git pull origin main
             docker compose down
@@ -32,6 +52,6 @@ jobs:
             docker exec \
               -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
               -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-              -e AWS_S3_BUCKET_NAME=howmanycaffeine-data \
+              -e AWS_S3_BUCKET_NAME=howmanycaffeine-data-seoul \
               -e AWS_REGION=ap-northeast-2 \
               backend_server python3 /app/tasks/run_pipeline.py

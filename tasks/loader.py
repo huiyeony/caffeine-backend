@@ -43,7 +43,7 @@ BRAND_ALIAS = {
 
 def _infer_ice_type(row: pd.Series) -> str:
     """ice_type: 크롤러 제공값 우선, 없으면 음료명에서 추론"""
-    raw_ice = (row["ice_type"] or "").upper()
+    raw_ice = (row.get("ice_type") or "").upper()
     if raw_ice in ("HOT", "ICE"):
         return raw_ice.lower()
     name = row["drink_name"].lower()
