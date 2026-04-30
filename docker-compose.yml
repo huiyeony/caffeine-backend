@@ -13,27 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # 2. Ollama 서비스 (임베딩 및 추론) - OpenAI API 사용으로 전체 주석 처리
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   container_name: ollama
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   # Entrypoint를 리스트 형식으로 작성하여 기본값을 완전히 덮어씁니다.
-  #   entrypoint: >
-  #     /bin/sh -c "
-  #     ollama serve &
-  #     sleep 15;
-  #     ollama pull bge-m3:567m;
-  #     ollama pull coolsoon/kanana-1.5-8b;
-  #     wait
-  #     "
-  #   environment:
-  #     - OLLAMA_KEEP_ALIVE=-1
-
-  # 3. 백엔드 API 서비스
+  # 2. 백엔드 API 서비스
   api:
     build:
       context: .
@@ -61,7 +41,7 @@ services:
       # - OLLAMA_BASE_URL=http://ollama:11434 # 로컬 모델 URL 주석 처리
       - PYTHONUNBUFFERED=1
 
-  # 4. Apache Superset (BI 대시보드)
+  # 3. 프록시 서버
   nginx:
     image: nginx:alpine
     container_name: nginx_proxy
@@ -83,22 +63,8 @@ services:
       - certbot_www:/var/www/certbot
       - certbot_conf:/etc/letsencrypt
 
-  superset:
-    image: apache/superset:latest
-    container_name: superset
-    restart: always
-    depends_on:
-      - db
-    ports:
-      - "8088:8088"
-    environment:
-      - SUPERSET_SECRET_KEY=howmanycaffeine-superset-secret-key
-    volumes:
-      - superset_home:/app/superset_home
-
 volumes:
   postgres_data:
   ollama_data:
-  superset_home:
   certbot_www:
   certbot_conf:
